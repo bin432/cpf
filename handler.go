@@ -82,7 +82,6 @@ func (c *clientHandler) HandleCommand() {
 			break
 		}
 	}
-
 }
 
 // sendMessage send result msg to client
