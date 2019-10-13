@@ -10,8 +10,8 @@ import (
 	"os"
 )
 
-// 控制 只能100个 同时操作文件，高并发限制
-var fgg = make(ghan, 100)
+// 限制 同时操作文件 的 gos，高并发限制
+var fgg ghan
 
 type ghan chan bool
 
@@ -26,42 +26,36 @@ type LFile struct {
 // OpenFile f
 func OpenFile(name string, flag int) (*LFile, error) {
 	fgg.enter()
-
+	defer fgg.leave()
 	f, err := os.OpenFile(name, flag, 0666)
 	if err != nil {
-		fgg.leave()
 		return nil, err
 	}
-	fgg.leave()
 	return &LFile{f: f}, nil
 }
 
 // Close f
-func (f *LFile) Close() (err error) {
+func (f *LFile) Close() error {
 	fgg.enter()
-	err = f.f.Close()
-	fgg.leave()
-	return
+	defer fgg.leave()
+	return f.f.Close()
 }
 
 // Seek go
-func (f *LFile) Seek(offset int64, whence int) (ret int64, err error) {
+func (f *LFile) Seek(offset int64, whence int) (int64, error) {
 	fgg.enter()
-	ret, err = f.f.Seek(offset, whence)
-	fgg.leave()
-	return
+	defer fgg.leave()
+	return f.f.Seek(offset, whence)
 }
 
 func (f *LFile) Read(p []byte) (n int, err error) {
 	fgg.enter()
-	n, err = f.f.Read(p)
-	fgg.leave()
-	return
+	defer fgg.leave()
+	return f.f.Read(p)
 }
 
 func (f *LFile) Write(p []byte) (n int, err error) {
 	fgg.enter()
-	n, err = f.f.Write(p)
-	fgg.leave()
-	return
+	defer fgg.leave()
+	return f.f.Write(p)
 }

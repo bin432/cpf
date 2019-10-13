@@ -13,7 +13,7 @@ func (c *clientHandler) handlePut(name string, arg string) bool {
 		c.sendMessage(54, "command error")
 		return true
 	}
-	realPath := filepath.Join(c.server.putPath, name)
+	realPath := filepath.Join(c.server.cfg.getPutPath(), name)
 
 	var fileFlag = os.O_WRONLY
 	if arg == "appd" {
@@ -31,7 +31,7 @@ func (c *clientHandler) handlePut(name string, arg string) bool {
 	// 读写文件 请使用 handle_file 里的 文件io 做了 协程数限制
 	fl, err := OpenFile(realPath, fileFlag)
 	if err != nil {
-		c.server.logger.Error("OpenFile: ", err)
+		c.server.log.Error("OpenFile: ", err)
 		if os.IsNotExist(err) {
 			c.sendMessage(20, "file does not exist")
 			return true
@@ -60,12 +60,12 @@ func (c *clientHandler) handlePut(name string, arg string) bool {
 		c.resetRTO()
 		dataLine, errData := c.readLine()
 		if errData != nil {
-			c.server.logger.Error("readLine err readdata")
+			c.server.log.Error("readLine err readdata")
 			break
 		}
 		dataSize, errData := strconv.ParseInt(dataLine, 16, 0)
 		if errData != nil {
-			c.server.logger.Error("data.ParseUint:", dataLine, errData)
+			c.server.log.Error("data.ParseUint:", dataLine, errData)
 			break
 		}
 		if dataSize == 0 { // 传输 完成
@@ -77,19 +77,19 @@ func (c *clientHandler) handlePut(name string, arg string) bool {
 		cps, errCopy := io.CopyBuffer(fl, io.LimitReader(c.reader, dataSize), *bufp)
 		hadSize += cps
 		if errCopy != nil {
-			c.server.logger.Error("CopyBuffer File:", errCopy)
+			c.server.log.Error("CopyBuffer File:", errCopy)
 			break
 		}
 
 		if cps < dataSize { // the conn EOF disconnect
-			c.server.logger.Error("CopyBuffer cps < dataSize:", cps, dataSize)
+			c.server.log.Error("CopyBuffer cps < dataSize:", cps, dataSize)
 			break
 		}
 	}
 	BufPool.Put(bufp)
 	errClose := fl.Close()
 	if errClose != nil {
-		c.server.logger.Error("fClose:", name, errClose)
+		c.server.log.Error("fClose:", name, errClose)
 	}
 
 	if hadDone {

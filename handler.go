@@ -33,19 +33,19 @@ type clientHandler struct {
 }
 
 func (c *clientHandler) HandleCommand() {
-	c.server.logger.Debug("the conn is begin", c.remoteAddr)
+	c.server.log.Debug("the conn is begin", c.remoteAddr)
 	defer func() {
 		if err := recover(); err != nil {
 			const size = 64 << 10
 			buf := make([]byte, size)
 			buf = buf[:runtime.Stack(buf, false)]
-			c.server.logger.Error("HandleCommand: panic", err, buf)
+			c.server.log.Error("HandleCommand: panic", err, buf)
 		}
 		c.conn.Close()
-		c.server.logger.Debug("the conn is closed", c.remoteAddr)
+		c.server.log.Debug("the conn is closed", c.remoteAddr)
 	}()
 
-	c.sendMessage(0, c.server.welcome)
+	c.sendMessage(0, c.server.Welcome)
 
 	// 设置 读取 超时
 	//c.conn.SetReadDeadline(time.Now().Add(time.Second))
@@ -56,11 +56,11 @@ func (c *clientHandler) HandleCommand() {
 		line, err := c.readLine()
 		if err != nil {
 			if err != io.EOF {
-				c.server.logger.Error("readLine err readcmd")
+				c.server.log.Error("readLine err readcmd")
 			}
 			break
 		}
-		c.server.logger.Debug(line)
+		c.server.log.Debug(line)
 		cmd, name, arg := parseLine(line)
 
 		var ok = false
@@ -73,7 +73,7 @@ func (c *clientHandler) HandleCommand() {
 			c.sendMessage(0, "goodbye")
 			ok = false
 		default:
-			c.server.logger.Error("not the command: ", cmd)
+			c.server.log.Error("not the command: ", cmd)
 			c.sendMessage(52, "not the command")
 			ok = false
 		}
@@ -99,11 +99,11 @@ func (c *clientHandler) sendMessage(errCode int, msg string) {
 	}
 	snd, err := c.conn.Write([]byte(cmd))
 	if err != nil {
-		c.server.logger.Error("conn.Write:", err)
+		c.server.log.Error("conn.Write:", err)
 		panic(err)
 	}
 	if snd < len(cmd) {
-		c.server.logger.Error("conn.Write less msg:")
+		c.server.log.Error("conn.Write less msg:")
 		panic(errors.New("write less"))
 	}
 }
@@ -116,10 +116,10 @@ func (c *clientHandler) readLine() (string, error) {
 			return line, err
 		}
 		if os.IsTimeout(err) {
-			c.server.logger.Error("readLine timeout:", err)
+			c.server.log.Error("readLine timeout:", err)
 			c.sendMessage(53, "cmd timeout")
 		} else {
-			c.server.logger.Error("readLine other:", err)
+			c.server.log.Error("readLine other:", err)
 		}
 		return line, err
 	}

@@ -2,10 +2,11 @@ package cpf
 
 import (
 	"bufio"
-	"fmt"
 	"net"
 	"time"
 )
+
+var def = &defaultInterface{}
 
 // 日志 接口
 type logger interface {
@@ -13,25 +14,18 @@ type logger interface {
 	Error(v ...interface{})
 }
 
-// 默认的 日志 记录
-type defLogger struct{}
-
-func (l *defLogger) Debug(v ...interface{}) {
-	fmt.Println("Debug: ", v)
-}
-func (l *defLogger) Error(v ...interface{}) {
-	fmt.Println("Error: ", v)
+type configer interface {
+	getPutPath() string
+	getGetPath(string) (string, bool)
 }
 
 // Server is a cpf server
 type Server struct {
 	// 欢迎 语句
-	welcome  string
+	Welcome  string
 	listener net.Listener
-	logger   logger
-
-	putPath  string            // 上传 路径
-	getPaths map[string]string // 下载 路径 支持 多个路径 id-path
+	cfg      configer
+	log      logger
 
 	ReadTimeout  time.Duration
 	WriteTimeout time.Duration
@@ -39,39 +33,52 @@ type Server struct {
 }
 
 // NewServer create a server
-func NewServer(welcome string, put string, gets map[string]string, log logger) *Server {
+func NewServer(cfg configer, log logger) *Server {
 	s := &Server{
-		welcome:  welcome,
-		putPath:  put,
-		getPaths: gets,
+		Welcome: "Welcome to cpf",
 
 		ReadTimeout:  time.Minute,
 		WriteTimeout: time.Minute,
 		IdleTimeout:  time.Minute * 5,
 	}
 
-	if log == nil {
-		s.logger = &defLogger{}
+	if cfg == nil {
+		s.cfg = def
 	} else {
-		s.logger = log
+		s.cfg = cfg
+	}
+
+	if log == nil {
+		s.log = def
+	} else {
+		s.log = log
 	}
 
 	return s
 }
 
+// SetFileGos 设置 操作 文件io 的 并发数
+func (s *Server) SetFileGos(count int) {
+	fgg = make(ghan, count)
+}
+
 // ListenAndServe the addr
 func (s *Server) ListenAndServe(addr string) error {
+	if fgg == nil {
+		fgg = make(ghan, 100)
+	}
+
 	var err error
 	s.listener, err = net.Listen("tcp", addr)
 	if err != nil {
-		s.logger.Error("net.Listen:", err)
+		s.log.Error("net.Listen:", err)
 		return err
 	}
 
 	for {
 		conn, err := s.listener.Accept()
 		if err != nil {
-			s.logger.Error("listener.Accept:", err)
+			s.log.Error("listener.Accept:", err)
 			break
 		}
 

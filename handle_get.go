@@ -19,7 +19,7 @@ func (c *clientHandler) handleGet(name string, arg string) bool {
 		c.sendMessage(55, "bad arg")
 		return true
 	}
-	base, ok := c.server.getPaths[id]
+	base, ok := c.server.cfg.getGetPath(id)
 	if !ok {
 		c.sendMessage(55, "not the id")
 		return true
@@ -28,7 +28,7 @@ func (c *clientHandler) handleGet(name string, arg string) bool {
 
 	fl, err := OpenFile(realPath, os.O_RDONLY)
 	if err != nil {
-		c.server.logger.Error("OpenFile: ", err)
+		c.server.log.Error("OpenFile: ", err)
 		if os.IsNotExist(err) {
 			c.sendMessage(20, "file does not exist")
 			return true
@@ -47,7 +47,7 @@ func (c *clientHandler) handleGet(name string, arg string) bool {
 		}
 		_, err = fl.Seek(offset, io.SeekStart)
 		if err != nil {
-			c.server.logger.Error("seek: ", offset, err)
+			c.server.log.Error("seek: ", offset, err)
 			fl.Close()
 			c.sendMessage(55, "offset err")
 			return true
@@ -66,12 +66,12 @@ func (c *clientHandler) handleGet(name string, arg string) bool {
 		c.resetRTO()
 		dataLine, errData := c.readLine()
 		if errData != nil {
-			c.server.logger.Error("readLine err readdata")
+			c.server.log.Error("readLine err readdata")
 			break
 		}
 		dataSize, errData := strconv.ParseInt(dataLine, 16, 0)
 		if errData != nil {
-			c.server.logger.Error("data.ParseUint:", dataLine, errData)
+			c.server.log.Error("data.ParseUint:", dataLine, errData)
 			break
 		}
 		if dataSize == 0 { // 结束传输
@@ -87,7 +87,7 @@ func (c *clientHandler) handleGet(name string, arg string) bool {
 		rs, errRead := fl.Read((*bufp)[:dataSize])
 		if errRead != nil {
 			if errRead != io.EOF { // 如果 不是 EOF 就直接 报错退出
-				c.server.logger.Error("fl.Read:", rs, errRead)
+				c.server.log.Error("fl.Read:", rs, errRead)
 				break
 			}
 		}
@@ -97,11 +97,11 @@ func (c *clientHandler) handleGet(name string, arg string) bool {
 		cmd := fmt.Sprintf("%X\r\n", rs)
 		snd, err := c.conn.Write([]byte(cmd))
 		if err != nil {
-			c.server.logger.Error("conn.Write dataSize: ", err)
+			c.server.log.Error("conn.Write dataSize: ", err)
 			break
 		}
 		if snd < len(cmd) {
-			c.server.logger.Error("conn.Write dataSize less msg:")
+			c.server.log.Error("conn.Write dataSize less msg:")
 			break
 		}
 
@@ -110,12 +110,12 @@ func (c *clientHandler) handleGet(name string, arg string) bool {
 			cws, errWrite := c.conn.Write((*bufp)[:rs])
 			hadSize += int64(cws)
 			if errWrite != nil {
-				c.server.logger.Error("conn.Write:", errWrite)
+				c.server.log.Error("conn.Write:", errWrite)
 				break
 			}
 
 			if cws < rs { // the conn EOF disconnect
-				c.server.logger.Error("conn.Write cws < rs:", cws, rs)
+				c.server.log.Error("conn.Write cws < rs:", cws, rs)
 				break
 			}
 		}
@@ -123,7 +123,7 @@ func (c *clientHandler) handleGet(name string, arg string) bool {
 	BufPool.Put(bufp)
 	errClose := fl.Close()
 	if errClose != nil {
-		c.server.logger.Error("fClose:", name, errClose)
+		c.server.log.Error("fClose:", name, errClose)
 	}
 
 	if hadDone {
