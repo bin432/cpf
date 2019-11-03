@@ -10,6 +10,11 @@ import (
 )
 
 func (c *clientHandler) handleGet(name string, arg string) bool {
+	if !c.isValid() {
+		c.sendMessage(57, "not auth")
+		return false
+	}
+
 	if name == "" {
 		c.sendMessage(54, "command error")
 		return true

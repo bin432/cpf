@@ -30,6 +30,7 @@ type clientHandler struct {
 	conn       net.Conn
 	reader     *bufio.Reader
 	remoteAddr string
+	authed     bool
 }
 
 func (c *clientHandler) HandleCommand() {
@@ -65,6 +66,8 @@ func (c *clientHandler) HandleCommand() {
 
 		var ok = false
 		switch cmd {
+		case "AUTH":
+			ok = c.handleAuth(name)
 		case "PUT":
 			ok = c.handlePut(name, arg)
 		case "GET":
@@ -142,6 +145,31 @@ func (c *clientHandler) resetITO() {
 	if c.server.IdleTimeout > 0 {
 		c.conn.SetReadDeadline(time.Now().Add(c.server.IdleTimeout))
 	}
+}
+
+// 处理 身份验证
+func (c *clientHandler) handleAuth(auth string) bool {
+	// 为空 表示 通过
+	if nil == c.server.auth {
+		c.authed = true
+	} else {
+		c.authed = c.server.auth(auth)
+	}
+	if c.authed {
+		c.sendMessage(0, "auth success")
+	} else {
+		c.sendMessage(33, "auth faild")
+	}
+	return c.authed
+}
+
+// 判断 是否 有效
+func (c *clientHandler) isValid() bool {
+	if nil == c.server.auth {
+		return true
+	}
+
+	return c.authed
 }
 
 func parseLine(line string) (string, string, string) {

@@ -30,6 +30,7 @@ type Server struct {
 	ReadTimeout  time.Duration
 	WriteTimeout time.Duration
 	IdleTimeout  time.Duration
+	auth         func(string) bool
 }
 
 // NewServer create a server
@@ -60,6 +61,11 @@ func NewServer(cfg configer, log logger) *Server {
 // SetFileGos 设置 操作 文件io 的 并发数
 func (s *Server) SetFileGos(count int) {
 	fgg = make(ghan, count)
+}
+
+// SetAuth 设置 验证接口， 不设置则为 不启用 验证
+func (s *Server) SetAuth(fn func(string) bool) {
+	s.auth = fn
 }
 
 // ListenAndServe the addr
