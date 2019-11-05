@@ -18,7 +18,7 @@ func (c *clientHandler) handlePut(name string, arg string) bool {
 		c.sendMessage(54, "command error")
 		return true
 	}
-	realPath := filepath.Join(c.server.cfg.getPutPath(), name)
+	realPath := filepath.Join(c.server.cfg.getPutPath(c.authArg), name)
 
 	var fileFlag = os.O_WRONLY
 	if arg == "appd" {

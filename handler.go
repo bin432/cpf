@@ -30,7 +30,8 @@ type clientHandler struct {
 	conn       net.Conn
 	reader     *bufio.Reader
 	remoteAddr string
-	authed     bool
+	isAuthed   bool
+	authArg    string
 }
 
 func (c *clientHandler) HandleCommand() {
@@ -151,16 +152,16 @@ func (c *clientHandler) resetITO() {
 func (c *clientHandler) handleAuth(auth string) bool {
 	// 为空 表示 通过
 	if nil == c.server.auth {
-		c.authed = true
+		c.isAuthed = true
 	} else {
-		c.authed = c.server.auth(auth)
+		c.isAuthed = c.server.auth(auth)
 	}
-	if c.authed {
+	if c.isAuthed {
 		c.sendMessage(0, "auth success")
 	} else {
 		c.sendMessage(33, "auth faild")
 	}
-	return c.authed
+	return c.isAuthed
 }
 
 // 判断 是否 有效
@@ -169,7 +170,7 @@ func (c *clientHandler) isValid() bool {
 		return true
 	}
 
-	return c.authed
+	return c.isAuthed
 }
 
 func parseLine(line string) (string, string, string) {

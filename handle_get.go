@@ -19,12 +19,12 @@ func (c *clientHandler) handleGet(name string, arg string) bool {
 		c.sendMessage(54, "command error")
 		return true
 	}
-	offset, id := parseGetArg(arg)
+	offset, pathID := parseGetArg(arg)
 	if -1 == offset {
 		c.sendMessage(55, "bad arg")
 		return true
 	}
-	base, ok := c.server.cfg.getGetPath(id)
+	base, ok := c.server.cfg.getGetPath(c.authArg, pathID)
 	if !ok {
 		c.sendMessage(55, "not the id")
 		return true

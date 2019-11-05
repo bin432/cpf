@@ -14,9 +14,10 @@ type logger interface {
 	Error(v ...interface{})
 }
 
+// 配置 接口
 type configer interface {
-	getPutPath() string
-	getGetPath(string) (string, bool)
+	getPutPath(authArg string) string
+	getGetPath(authArg string, pathID string) (string, bool)
 }
 
 // Server is a cpf server
@@ -63,8 +64,8 @@ func (s *Server) SetFileGos(count int) {
 	fgg = make(ghan, count)
 }
 
-// SetAuth 设置 验证接口， 不设置则为 不启用 验证
-func (s *Server) SetAuth(fn func(string) bool) {
+// SetAuthFunc 设置 验证接口， 不设置则为 不启用 验证
+func (s *Server) SetAuthFunc(fn func(string) bool) {
 	s.auth = fn
 }
 
