@@ -36,6 +36,7 @@ type clientHandler struct {
 
 func (c *clientHandler) HandleCommand() {
 	c.server.log.Debug("the conn is begin", c.remoteAddr)
+
 	defer func() {
 		if err := recover(); err != nil {
 			const size = 64 << 10
@@ -49,8 +50,6 @@ func (c *clientHandler) HandleCommand() {
 
 	c.sendMessage(0, c.server.Welcome)
 
-	// 设置 读取 超时
-	//c.conn.SetReadDeadline(time.Now().Add(time.Second))
 	// 可以 处理 多个 命令
 	for {
 		// 读取 cmd 头
@@ -65,25 +64,19 @@ func (c *clientHandler) HandleCommand() {
 		c.server.log.Debug(line)
 		cmd, name, arg := parseLine(line)
 
-		var ok = false
 		switch cmd {
 		case "AUTH":
-			ok = c.handleAuth(name)
+			c.handleAuth(name)
 		case "PUT":
-			ok = c.handlePut(name, arg)
+			c.handlePut(name, arg)
 		case "GET":
-			ok = c.handleGet(name, arg)
+			c.handleGet(name, arg)
 		case "QUIT":
 			c.sendMessage(0, "goodbye")
-			ok = false
+			break
 		default:
 			c.server.log.Error("not the command: ", cmd)
-			c.sendMessage(52, "not the command")
-			ok = false
-		}
-
-		if !ok {
-			break
+			c.sendMessage(44, "not the command")
 		}
 	}
 }
@@ -149,7 +142,7 @@ func (c *clientHandler) resetITO() {
 }
 
 // 处理 身份验证
-func (c *clientHandler) handleAuth(auth string) bool {
+func (c *clientHandler) handleAuth(auth string) {
 	// 为空 表示 通过
 	if nil == c.server.auth {
 		c.isAuthed = true
@@ -161,7 +154,6 @@ func (c *clientHandler) handleAuth(auth string) bool {
 	} else {
 		c.sendMessage(33, "auth faild")
 	}
-	return c.isAuthed
 }
 
 // 判断 是否 有效

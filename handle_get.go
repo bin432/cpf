@@ -9,55 +9,62 @@ import (
 	"strings"
 )
 
-func (c *clientHandler) handleGet(name string, arg string) bool {
+func (c *clientHandler) handleGet(name string, arg string) {
 	if !c.isValid() {
-		c.sendMessage(57, "not auth")
-		return false
+		c.sendMessage(33, "not auth")
+		return
 	}
 
 	if name == "" {
-		c.sendMessage(54, "command error")
-		return true
+		c.sendMessage(55, "command error")
+		return
 	}
 	offset, pathID := parseGetArg(arg)
 	if -1 == offset {
 		c.sendMessage(55, "bad arg")
-		return true
+		return
 	}
-	base, ok := c.server.cfg.getGetPath(c.authArg, pathID)
-	if !ok {
-		c.sendMessage(55, "not the id")
-		return true
+	getPath, err := c.server.cfg.QueryGetPath(c.authArg, pathID)
+	if err != nil {
+		c.server.log.Error("QueryGetPath err:", err)
+		if os.IsNotExist(err) {
+			c.sendMessage(43, "not the id")
+		} else {
+			c.sendMessage(55, "query path error")
+		}
+		return
 	}
-	realPath := filepath.Join(base, name)
-
+	realPath := filepath.Join(getPath, name)
 	fl, err := OpenFile(realPath, os.O_RDONLY)
 	if err != nil {
 		c.server.log.Error("OpenFile: ", err)
 		if os.IsNotExist(err) {
-			c.sendMessage(20, "file does not exist")
-			return true
+			c.sendMessage(44, "file does not exist")
+			return
 		}
 		c.sendMessage(55, "openfile err")
-		return true
+		return
 	}
+	defer fl.Close() // 只读 方法 Close 基本上 不会 报错
 
+	// 先 获取 文件 大小
 	size, _ := fl.Seek(0, io.SeekEnd)
 	// 续传
 	if offset > 0 {
 		if offset > size {
-			fl.Close()
-			c.sendMessage(54, "offset to large")
-			return true
+			c.server.log.Error("offset to large:", offset, size)
+			c.sendMessage(55, "offset to large")
+			return
 		}
+		// 移动 文件指针 到 off
 		_, err = fl.Seek(offset, io.SeekStart)
 		if err != nil {
 			c.server.log.Error("seek: ", offset, err)
-			fl.Close()
 			c.sendMessage(55, "offset err")
-			return true
+			return
 		}
 	} else {
+		// 再次 将文件指针 移动到 开始处
 		fl.Seek(0, io.SeekStart)
 	}
 
@@ -84,7 +91,7 @@ func (c *clientHandler) handleGet(name string, arg string) bool {
 			break
 		}
 
-		// 如果一次要读取的 buf 太大，就 返回小点
+		// 因为 BufPool大小限制 如果一次要读取的 buf 太大，就 返回 BufPool 的大小
 		if dataSize > maxBufSize {
 			dataSize = maxBufSize
 		}
@@ -126,23 +133,16 @@ func (c *clientHandler) handleGet(name string, arg string) bool {
 		}
 	}
 	BufPool.Put(bufp)
-	errClose := fl.Close()
-	if errClose != nil {
-		c.server.log.Error("fClose:", name, errClose)
-	}
+	// fl.Close 在 上面 defer
 
 	if hadDone {
-		if errClose == nil {
-			// 结束传输，返回这个过程传输的 字节数，注意 不是文件的总大小
-			c.sendMessage(0, strconv.FormatInt(hadSize, 10))
-		} else {
-			c.sendMessage(55, "file err")
-		}
-
-		return true
+		// 结束传输，返回这个过程传输的 字节数，注意 不是文件的总大小
+		c.sendMessage(0, strconv.FormatInt(hadSize, 10))
+		return
 	}
-	// 在 传输 数据段时，出现了任何错误都将断开连接
-	return false
+	// 走到这里 就说明 出错了
+	c.sendMessage(55, "server err")
+	panic("server err") // 使用 panic 断开连接
 }
 
 func parseGetArg(arg string) (offset int64, id string) {

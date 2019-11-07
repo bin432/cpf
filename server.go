@@ -16,8 +16,8 @@ type logger interface {
 
 // 配置 接口
 type configer interface {
-	getPutPath(authArg string) string
-	getGetPath(authArg string, pathID string) (string, bool)
+	QueryPutPath(authArg string) (string, error)
+	QueryGetPath(authArg string, pathID string) (string, error)
 }
 
 // Server is a cpf server

@@ -12,9 +12,9 @@ func (d *defaultInterface) Error(v ...interface{}) {
 	fmt.Println("Error:", v)
 }
 
-func (d *defaultInterface) getPutPath(authArg string) string {
-	return ""
+func (d *defaultInterface) QueryPutPath(authArg string) (string, error) {
+	return "", nil
 }
-func (d *defaultInterface) getGetPath(authArg string, pathID string) (string, bool) {
-	return "", true
+func (d *defaultInterface) QueryGetPath(authArg string, pathID string) (string, error) {
+	return "", nil
 }
