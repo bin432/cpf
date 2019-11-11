@@ -9,6 +9,7 @@ import (
 	"strings"
 )
 
+// handleGet 读取 只能 路径
 func (c *clientHandler) handleGet(name string, arg string) {
 	if !c.isValid() {
 		c.sendMessage(33, "not auth")
@@ -27,7 +28,7 @@ func (c *clientHandler) handleGet(name string, arg string) {
 	getPath, err := c.server.cfg.QueryGetPath(c.authArg, pathID)
 	if err != nil {
 		c.server.log.Error("QueryGetPath err:", err)
-		if os.IsNotExist(err) {
+		if ErrNotPathID == err {
 			c.sendMessage(43, "not the id")
 		} else {
 			c.sendMessage(55, "query path error")

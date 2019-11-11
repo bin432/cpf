@@ -7,7 +7,36 @@ import (
 	"strconv"
 )
 
-// handlePut return  false that close the conn
+// handleDel 只能 删除 putPath 里的文件
+func (c *clientHandler) handleDel(name string) {
+	if !c.isValid() {
+		c.sendMessage(33, "not auth")
+		return
+	}
+
+	if name == "" {
+		c.sendMessage(55, "command error")
+		return
+	}
+	putPath, err := c.server.cfg.QueryPutPath(c.authArg)
+	if err != nil {
+		c.server.log.Error("QueryPutPath err:", err)
+		c.sendMessage(55, "query path error")
+		return
+	}
+	realPath := filepath.Join(putPath, name)
+	err = os.Remove(realPath)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			c.server.log.Error("Del err:", err)
+			c.sendMessage(55, "del fail")
+			return
+		}
+	}
+	c.sendMessage(0, "del success")
+}
+
+// handlePut
 func (c *clientHandler) handlePut(name string, arg string) {
 	if !c.isValid() {
 		c.sendMessage(33, "not auth")

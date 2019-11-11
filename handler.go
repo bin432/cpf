@@ -67,6 +67,8 @@ func (c *clientHandler) HandleCommand() {
 		switch cmd {
 		case "AUTH":
 			c.handleAuth(name)
+		case "DEL":
+			c.handleDel(name)
 		case "PUT":
 			c.handlePut(name, arg)
 		case "GET":

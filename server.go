@@ -2,6 +2,7 @@ package cpf
 
 import (
 	"bufio"
+	"errors"
 	"net"
 	"time"
 )
@@ -19,6 +20,9 @@ type configer interface {
 	QueryPutPath(authArg string) (string, error)
 	QueryGetPath(authArg string, pathID string) (string, error)
 }
+
+// ErrNotPathID 是QueryGetPath的特指
+var ErrNotPathID = errors.New("cpf: not pathID")
 
 // Server is a cpf server
 type Server struct {
