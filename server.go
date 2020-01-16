@@ -7,6 +7,29 @@ import (
 	"time"
 )
 
+const (
+	// ErrCodeOK 成功
+	ErrCodeOK = 0
+	// ErrCodeAuth 验证失败
+	ErrCodeAuth = 33
+	// ErrCodeNotFile 没有该文件
+	ErrCodeNotFile = 42
+	// ErrCodeExisted 已经有了
+	ErrCodeExisted = 43
+	// ErrCodeNotCmd 没有该命令
+	ErrCodeNotCmd = 44
+	// ErrCodeNotID 没有该 id
+	ErrCodeNotID = 45
+	// ErrCodeOffset offset 错误
+	ErrCodeOffset = 46
+	// ErrCodeTimeOut 超时
+	ErrCodeTimeOut = 53
+	// ErrCodeCmdArgs 命令错误
+	ErrCodeCmdArgs = 54
+	// ErrCodeServer  服务器错误
+	ErrCodeServer = 55
+)
+
 var def = &defaultInterface{}
 
 // 日志 接口

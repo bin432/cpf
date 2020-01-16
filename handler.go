@@ -48,7 +48,7 @@ func (c *clientHandler) HandleCommand() {
 		c.server.log.Debug("the conn is closed", c.remoteAddr)
 	}()
 
-	c.sendMessage(0, c.server.Welcome)
+	c.sendMessage(ErrCodeOK, c.server.Welcome)
 
 	// 可以 处理 多个 命令
 	for {
@@ -74,11 +74,11 @@ func (c *clientHandler) HandleCommand() {
 		case "GET":
 			c.handleGet(name, arg)
 		case "QUIT":
-			c.sendMessage(0, "goodbye")
+			c.sendMessage(ErrCodeOK, "goodbye")
 			break
 		default:
 			c.server.log.Error("not the command: ", cmd)
-			c.sendMessage(44, "not the command")
+			c.sendMessage(ErrCodeNotCmd, "not the command")
 		}
 	}
 }
@@ -115,7 +115,7 @@ func (c *clientHandler) readLine() (string, error) {
 		}
 		if os.IsTimeout(err) {
 			c.server.log.Error("readLine timeout:", err)
-			c.sendMessage(53, "cmd timeout")
+			c.sendMessage(ErrCodeTimeOut, "cmd timeout")
 		} else {
 			c.server.log.Error("readLine other:", err)
 		}
@@ -152,9 +152,9 @@ func (c *clientHandler) handleAuth(auth string) {
 		c.isAuthed = c.server.auth(auth)
 	}
 	if c.isAuthed {
-		c.sendMessage(0, "auth success")
+		c.sendMessage(ErrCodeOK, "auth success")
 	} else {
-		c.sendMessage(33, "auth faild")
+		c.sendMessage(ErrCodeAuth, "auth faild")
 	}
 }
 

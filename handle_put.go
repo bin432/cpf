@@ -10,18 +10,18 @@ import (
 // handleDel 只能 删除 putPath 里的文件
 func (c *clientHandler) handleDel(name string) {
 	if !c.isValid() {
-		c.sendMessage(33, "not auth")
+		c.sendMessage(ErrCodeAuth, "not auth")
 		return
 	}
 
 	if name == "" {
-		c.sendMessage(55, "command error")
+		c.sendMessage(ErrCodeCmdArgs, "command error")
 		return
 	}
 	putPath, err := c.server.cfg.QueryPutPath(c.authArg)
 	if err != nil {
 		c.server.log.Error("QueryPutPath err:", err)
-		c.sendMessage(55, "query path error")
+		c.sendMessage(ErrCodeServer, "query path error")
 		return
 	}
 	realPath := filepath.Join(putPath, name)
@@ -29,28 +29,28 @@ func (c *clientHandler) handleDel(name string) {
 	if err != nil {
 		if !os.IsNotExist(err) {
 			c.server.log.Error("Del err:", err)
-			c.sendMessage(55, "del fail")
+			c.sendMessage(ErrCodeServer, "del fail")
 			return
 		}
 	}
-	c.sendMessage(0, "del success")
+	c.sendMessage(ErrCodeOK, "del success")
 }
 
 // handlePut
 func (c *clientHandler) handlePut(name string, arg string) {
 	if !c.isValid() {
-		c.sendMessage(33, "not auth")
+		c.sendMessage(ErrCodeAuth, "not auth")
 		return
 	}
 
 	if name == "" {
-		c.sendMessage(55, "command error")
+		c.sendMessage(ErrCodeCmdArgs, "command error")
 		return
 	}
 	putPath, err := c.server.cfg.QueryPutPath(c.authArg)
 	if err != nil {
 		c.server.log.Error("QueryPutPath err:", err)
-		c.sendMessage(55, "query path error")
+		c.sendMessage(ErrCodeServer, "query path error")
 		return
 	}
 	realPath := filepath.Join(putPath, name)
@@ -65,7 +65,7 @@ func (c *clientHandler) handlePut(name string, arg string) {
 		fileFlag |= os.O_CREATE
 	} else {
 		c.server.log.Error("bad arg:", arg)
-		c.sendMessage(55, "bad arg")
+		c.sendMessage(ErrCodeCmdArgs, "bad arg")
 		return
 	}
 
@@ -74,22 +74,22 @@ func (c *clientHandler) handlePut(name string, arg string) {
 	if err != nil {
 		c.server.log.Error("OpenFile: ", err)
 		if os.IsNotExist(err) {
-			c.sendMessage(44, "file does not exist")
+			c.sendMessage(ErrCodeNotFile, "file does not exist")
 			return
 		}
 		if os.IsExist(err) {
-			c.sendMessage(45, "file already exists")
+			c.sendMessage(ErrCodeExisted, "file already exists")
 			return
 		}
 
-		c.sendMessage(55, "openfile err")
+		c.sendMessage(ErrCodeServer, "openfile err")
 		return
 	}
 	// 移动到 文件尾
 	size, _ := fl.Seek(0, io.SeekEnd)
 
 	// 返回 文件 指针 offset 用于 断点续传
-	c.sendMessage(0, strconv.FormatInt(size, 10))
+	c.sendMessage(ErrCodeOK, strconv.FormatInt(size, 10))
 
 	// 开始 接收 数据段
 	//buf := make([]byte, 16*1024)
@@ -137,13 +137,13 @@ func (c *clientHandler) handlePut(name string, arg string) {
 	if hadDone {
 		if errClose == nil {
 			// 结束传输，返回这个过程传输的 字节数，注意 不是文件的总大小
-			c.sendMessage(0, strconv.FormatInt(hadSize, 10))
+			c.sendMessage(ErrCodeOK, strconv.FormatInt(hadSize, 10))
 		} else {
-			c.sendMessage(55, "file save faided")
+			c.sendMessage(ErrCodeServer, "file save faided")
 		}
 		return
 	}
 	// 走到这里 就说明 出错了
-	c.sendMessage(55, "server err")
+	c.sendMessage(ErrCodeServer, "server err")
 	panic("server err") // 使用 panic 断开连接
 }
