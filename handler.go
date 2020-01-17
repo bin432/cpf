@@ -75,7 +75,7 @@ func (c *clientHandler) HandleCommand() {
 			c.handleGet(name, arg)
 		case "QUIT":
 			c.sendMessage(ErrCodeOK, "goodbye")
-			break
+			return
 		default:
 			c.server.log.Error("not the command: ", cmd)
 			c.sendMessage(ErrCodeNotCmd, "not the command")
