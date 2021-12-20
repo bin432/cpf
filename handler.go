@@ -50,8 +50,9 @@ func (c *clientHandler) HandleCommand() {
 
 	c.sendMessage(0, c.server.Welcome)
 
+	running := true
 	// 可以 处理 多个 命令
-	for {
+	for running {
 		// 读取 cmd 头
 		c.resetITO()
 		line, err := c.readLine()
@@ -75,7 +76,7 @@ func (c *clientHandler) HandleCommand() {
 			c.handleGet(name, arg)
 		case "QUIT":
 			c.sendMessage(0, "goodbye")
-			break
+			running = false
 		default:
 			c.server.log.Error("not the command: ", cmd)
 			c.sendMessage(44, "not the command")
