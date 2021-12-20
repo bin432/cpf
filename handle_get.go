@@ -12,26 +12,26 @@ import (
 // handleGet 读取 只能 路径
 func (c *clientHandler) handleGet(name string, arg string) {
 	if !c.isValid() {
-		c.sendMessage(33, "not auth")
+		c.sendMessage(ErrCodeAuth, "not auth")
 		return
 	}
 
 	if name == "" {
-		c.sendMessage(55, "command error")
+		c.sendMessage(ErrCodeCmdArgs, "command error")
 		return
 	}
 	offset, pathID := parseGetArg(arg)
 	if -1 == offset {
-		c.sendMessage(55, "bad arg")
+		c.sendMessage(ErrCodeCmdArgs, "bad arg")
 		return
 	}
 	getPath, err := c.server.cfg.QueryGetPath(c.authArg, pathID)
 	if err != nil {
 		c.server.log.Error("QueryGetPath err:", err)
 		if ErrNotPathID == err {
-			c.sendMessage(43, "not the id")
+			c.sendMessage(ErrCodeNotID, "not the id")
 		} else {
-			c.sendMessage(55, "query path error")
+			c.sendMessage(ErrCodeServer, "query path error")
 		}
 		return
 	}
@@ -40,10 +40,10 @@ func (c *clientHandler) handleGet(name string, arg string) {
 	if err != nil {
 		c.server.log.Error("OpenFile: ", err)
 		if os.IsNotExist(err) {
-			c.sendMessage(44, "file does not exist")
+			c.sendMessage(ErrCodeNotFile, "file does not exist")
 			return
 		}
-		c.sendMessage(55, "openfile err")
+		c.sendMessage(ErrCodeServer, "openfile err")
 		return
 	}
 	defer fl.Close() // 只读 方法 Close 基本上 不会 报错
@@ -54,14 +54,14 @@ func (c *clientHandler) handleGet(name string, arg string) {
 	if offset > 0 {
 		if offset > size {
 			c.server.log.Error("offset to large:", offset, size)
-			c.sendMessage(55, "offset to large")
+			c.sendMessage(ErrCodeOffset, "offset to large")
 			return
 		}
 		// 移动 文件指针 到 off
 		_, err = fl.Seek(offset, io.SeekStart)
 		if err != nil {
 			c.server.log.Error("seek: ", offset, err)
-			c.sendMessage(55, "offset err")
+			c.sendMessage(ErrCodeServer, "offset err")
 			return
 		}
 	} else {
@@ -70,7 +70,7 @@ func (c *clientHandler) handleGet(name string, arg string) {
 	}
 
 	// 返回 文件总大小
-	c.sendMessage(0, strconv.FormatInt(size, 10))
+	c.sendMessage(ErrCodeOK, strconv.FormatInt(size, 10))
 
 	bufp := BufPool.Get().(*[]byte)
 	var hadSize int64
@@ -138,11 +138,11 @@ func (c *clientHandler) handleGet(name string, arg string) {
 
 	if hadDone {
 		// 结束传输，返回这个过程传输的 字节数，注意 不是文件的总大小
-		c.sendMessage(0, strconv.FormatInt(hadSize, 10))
+		c.sendMessage(ErrCodeOK, strconv.FormatInt(hadSize, 10))
 		return
 	}
 	// 走到这里 就说明 出错了
-	c.sendMessage(55, "server err")
+	c.sendMessage(ErrCodeServer, "server err")
 	panic("server err") // 使用 panic 断开连接
 }
 
